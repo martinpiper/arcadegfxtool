@@ -8,6 +8,7 @@ We use https://github.com/bkaradzic/GENie
 ```make```
 
 though 
+
 ```gcc decode_test.c decode.c bmp.c```
 
 should work 
