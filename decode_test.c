@@ -9,6 +9,25 @@
 #include "decoder.h"
 #include "bmp.h"
 
+//	commandline flags 
+//	NAMEOFDRIVER.INI should always be 1st argument 
+//  -i alone, imports for ALL codecs in the decoder 
+//	-i 1 imports for entry 1 ( the second one ) etc. 
+//	-x alone, exports ALL codecs in the decoder 
+//	-x 1 exports just decoder 1 
+//	-q don't show image viewer for TIGR 
+//  -w write roms back out ( after import ) should be last 
+
+//	.INI files or drivers are from 
+//	http://umlautllama.com/projects/turacocl/#drivers 
+//	TuracoCL drivers are for old rom sets so may need rom names fixing up 
+//	huge thanks to them for releasing this and doing the work 
+//	I've only tested 4 different ones so YMMV
+//	GhostNGoblins,Pacman,BlackTiger,and BombJack
+
+// ****NOTE****
+//	this is the size of the TIGR window AND the width of the imported / exported images
+
 #define SCREEN_W 128
 #define SCREEN_H 128
 
@@ -18,12 +37,14 @@
 void tigrView(decoder_t *decode);
 #endif
 
+//	a default 
 RGBA palette[256]={{0,0x66,0xbb},{0x00,0x00,0x00},{0xcc,0xaa,0x88},{0xaa,0x88,0x66},{0x77,0x55,0x00},{0x55,0x44,0x00},{48,48,48},{56,56,56},{63,63,63},{63,0,0},{0,63,0},{0,0,63},{0,16,0},{0,0,16},{0,0,16},{0,0,0}};
 
 //	helper functions to make a tiled view of decoder cells
-
 int page=0;
 int pages=0;
+
+//	from X and Y get a tile ID as if the tiles where a tiled image 
 int getTileID(codec_t *c,int sx,int sy)
 {
 	int tw = SCREEN_W/c->width;
@@ -48,21 +69,25 @@ int getTileID(codec_t *c,int sx,int sy)
 	return id;
 }
 
+//	GET a color index from the current X&Y 
 int getTiledPix(codec_t *c,int sx,int sy)
 {
 	return decoderGetPix(c,sx,sy,getTileID(c,sx,sy));
 }
 
+//	SET a color index from the current X&Y 
 void setTiledPix(codec_t *c,int sx,int sy,int color)
 {
 	decoderSetPix(c,sx,sy,color,getTileID(c,sx,sy));
 }
 
+//	main funky
 int main(int argc, const char **argv)
 {
 	decoder_t *decode=NULL;
 	bool saveOnExit=true;
 	bool View=true;
+
 	for (int q=1;q<argc;q++)
 	{
 		if ((strstr(argv[q],".ini")) || (strstr(argv[q],".INI")))
@@ -70,11 +95,10 @@ int main(int argc, const char **argv)
 			printf("load %s\n",argv[q]);
 			decode = decoderParse((char*)argv[q]);
 		}
-
 //	write roms back out
 		if ((strcmp(argv[q],"-w")==0) && decode!=NULL)
 			saveOnExit=true;
-
+//	quiet mode
 		if ((strcmp(argv[q],"-q")==0) && decode!=NULL)
 			View=false;
 
@@ -142,15 +166,14 @@ int main(int argc, const char **argv)
 
 	page = 0;
 
+//	view if we want to 
 #ifdef TIGR_FIXED
 	if (View==true)
 		tigrView(decode);
 #endif
 	if (saveOnExit==true)
 		decoderWrite(decode);
-
 	decoderFree(decode);
-
 	return 0;
 }
 

@@ -9,7 +9,8 @@
 
 //	pretty big . may need more ? 
 static uint8_t rom[16*65536];
-
+//	load a file into a buffer 
+//	used by the rom loader
 static void decoderLoadTo(uint8_t *buffer,const char *fname)
 {
 FILE *fp;
@@ -28,6 +29,7 @@ int len;
 	fclose(fp);
 }
 
+//	save from a buffer of len bytes
 static void decoderSaveFrom(uint8_t *buffer,int len,const char *fname)
 {
 FILE *fp;
@@ -50,7 +52,7 @@ int decoderImageHeight(codec_t *c,int width)
 	return sh;
 }
 
-// get bit
+// get a single bit
 static int decoderGetBit( char * buffer, long bitnumber, long bufsize )
 {
 	long nbyte = bitnumber >> 3;
@@ -61,7 +63,7 @@ static int decoderGetBit( char * buffer, long bitnumber, long bufsize )
 	return ((buffer[nbyte] & mask) == mask);
 }
 
-//	set a bit 
+//	set a single bit 
 static void decoderSetBit( char * buffer, long bitnumber, int value, long bufsize )
 {
     long nbyte = bitnumber >> 3;
@@ -75,12 +77,15 @@ static void decoderSetBit( char * buffer, long bitnumber, int value, long bufsiz
 }
 
 //	just scan a number from the token
+//	for parsing the .INI files
+
 static int scandigit()
 {
 char *next = strtok(NULL," \r\n=");
 	if (next==NULL)	return 0;
 	return (atoi(next));
 }
+
 //	parse the .ini files 
 decoder_t *decoderParse(char *fname)
 {
@@ -90,14 +95,13 @@ codec_t *codec;
 char *ext;
 char *buffer=NULL;
 
+	//	read the entire file
 	FILE *fp=fopen(fname,"rb");
-
 	if (fp==NULL)
 	{
 		printf("File %s failed to load\n");
 		return NULL;
 	}
-
 	fseek(fp,0,SEEK_END);
 	len = ftell(fp)+1;
 	fseek(fp,0,SEEK_SET);
@@ -106,19 +110,21 @@ char *buffer=NULL;
 	fread(buffer,len-1,1,fp);
 	fclose(fp);
 
-
+	//	make a new decoder
 	dec = malloc(sizeof(decoder_t));
 	dec->ncodecs=0;
 	dec->description = NULL;
 	dec->codecs = NULL;
 	dec->roms = NULL;
+
+	//	start tokenizing
 	char* token = strtok(buffer, " \n\r\t="); 
 	char *next=NULL;
 
+	//	check for / or \\ in the ini name 
 	char *slash = strchr(fname,'/');
 	if (slash==NULL)
 		slash = strchr(fname,'\\');
-
 	if (slash!=NULL)		
 	{
 		dec->basename=strdup(slash+1);
@@ -126,15 +132,16 @@ char *buffer=NULL;
 	else
 		dec->basename=strdup(fname);
 
+	//	lowercase it 
 	for (int q=0;q<strlen(dec->basename);q++)
 		dec->basename[q]=tolower(dec->basename[q]);
 
-	printf("basename %s\n",dec->basename);
-
+	//	basename = pacman if input is drivers/PACMAN.ini 
 	ext = strstr(dec->basename,".ini");
 	if (ext!=NULL)
 		*ext = 0;
 
+	//	parse the info 
 	while(token!=NULL)
 	{
 		if (stricmp(token,"Description")==0)
@@ -152,6 +159,7 @@ char *buffer=NULL;
 		}
 		else if (stricmp(token,"Orientation")==0)
 		{
+			//	haven't encountered this , so isn't handled yet 
 			dec->orientation = scandigit();
 		}
 		else if (strstr(token,"[Decode")!=NULL)
@@ -222,23 +230,7 @@ char *buffer=NULL;
 	return dec;
 }
 
-void decoderDebug(decoder_t *dec)
-{
-	printf("Name:%s\n",dec->description);
-	printf("Codecs:%d\n",dec->ncodecs);
-
-	for (int q=0;q<dec->ncodecs;q++)
-	{
-		printf("w=%d h=%d bpp=%d\n",dec->codecs[q].width,dec->codecs[q].height,dec->codecs[q].planes);
-		printf("planes =");
-		for (int p=0;p<dec->codecs[q].planes;p++)
-		{
-			printf("%x ",dec->codecs[q].planeoffsets[p]);
-		}
-		printf("\n");
-	}
-}
-
+//	write all the GFX roms back out 
 void decoderWrite(decoder_t *dec)
 {
 rom_t *rm = dec->roms;
@@ -250,6 +242,7 @@ rom_t *rm = dec->roms;
 	}
 }
 
+//	clean up 
 void decoderFree(decoder_t *dec)
 {
 rom_t *rm;
@@ -271,7 +264,9 @@ rom_t *rm;
 	free(dec);
 }
 
-
+//
+//	get a pixel from a tile. 
+//
 int decoderGetPix(codec_t *c,int sx,int sy,int tile)
 {
 if (tile>c->total) return 0;
@@ -289,6 +284,10 @@ int yoffs = c->yoffsets[ty];
 	}
 	return bits;
 }
+
+//
+//	set a pixel a tile. 
+//
 
 void decoderSetPix(codec_t *c,int sx,int sy,int color,int tile)
 {
