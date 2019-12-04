@@ -1,0 +1,5 @@
+﻿_build
+bin
+*.exe
+*.make
+Makefile
