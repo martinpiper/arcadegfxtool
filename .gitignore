@@ -3,3 +3,7 @@ bin
 *.exe
 *.make
 Makefile
+x64
+Debug
+Release
+.vs
