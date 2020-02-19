@@ -170,6 +170,12 @@
     <ClCompile Include="decode_test.cpp" />
     <ClCompile Include="tigr.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="drivers\BLKTIGER.INI" />
+    <None Include="drivers\BOMBJACK.INI" />
+    <None Include="drivers\GNG.INI" />
+    <None Include="drivers\PACMAN.INI" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
